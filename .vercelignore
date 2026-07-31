@@ -1,0 +1,13 @@
+# Keep the Vercel build context small and free of local cruft.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+tests/
+.git/
+node_modules/
+.next/

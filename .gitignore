@@ -34,3 +34,13 @@ credentials*
 *.log
 *.sqlite
 *.db
+
+# Node / Next.js / Vercel (dashboard)
+node_modules/
+.next/
+out/
+.vercel/
+next-env.d.ts
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
