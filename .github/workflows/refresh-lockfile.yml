@@ -1,6 +1,9 @@
 name: Refresh npm lockfile
 
 on:
+  push:
+    branches:
+      - chore/vercel-deployment-hardening
   workflow_dispatch:
 
 permissions:
