@@ -118,3 +118,21 @@ def test_empty_log_head_is_genesis():
     assert log.head_id == GENESIS_PREV_ID
     assert len(log) == 0
     assert log.verify() is True
+
+def test_nested_payload_is_deeply_immutable():
+    log = LineageLog()
+    source = {"outer": {"items": [1, {"value": "original"}]}}
+    rec = log.append("nested", source, timestamp=TS)
+    source["outer"]["items"][1]["value"] = "changed"
+    assert rec.payload["outer"]["items"][1]["value"] == "original"
+    try:
+        rec.payload["outer"]["items"][1]["value"] = "tampered"
+        assert False, "nested lineage mapping should be immutable"
+    except TypeError:
+        pass
+    try:
+        rec.payload["outer"]["items"][0] = 99
+        assert False, "lineage sequences should be immutable"
+    except TypeError:
+        pass
+    assert log.verify() is True

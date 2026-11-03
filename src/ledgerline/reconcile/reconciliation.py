@@ -22,6 +22,7 @@ from decimal import Decimal
 from typing import Sequence
 
 from ledgerline.book.book import Book, Fill
+from ledgerline.core.instruments import get_spec
 
 __all__ = ["PositionDrift", "ReconciliationReport", "reconcile"]
 
@@ -93,8 +94,8 @@ def reconcile(
 
     for fill in fills:
         sym = fill.symbol.upper()
-        notional = fill.quantity * fill.price * fill.side.sign
-        expected_cash -= notional
+        notional = get_spec(sym).notional(fill.price, fill.quantity)
+        expected_cash -= notional * fill.side.sign
         expected_qty[sym] = expected_qty.get(sym, Decimal("0")) + fill.quantity * fill.side.sign
 
     # Collect every symbol that appears in either source.

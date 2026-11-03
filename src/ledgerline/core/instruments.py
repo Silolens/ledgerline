@@ -54,6 +54,15 @@ class InstrumentSpec:
         if not self.symbol or not self.symbol.strip():
             raise ValueError("symbol must be a non-empty string")
         object.__setattr__(self, "symbol", self.symbol.upper())
+        for name, value in (
+            ("contract_multiplier", self.contract_multiplier),
+            ("tick_size", self.tick_size),
+            ("lot_size", self.lot_size),
+        ):
+            amount = to_decimal(value, field=name)
+            if amount <= 0:
+                raise ValueError(f"{name} must be positive, got {amount}")
+            object.__setattr__(self, name, amount)
 
     def notional(self, price: Numeric, quantity: Numeric) -> Decimal:
         """Cash value of ``quantity`` units at ``price``.
@@ -76,18 +85,19 @@ def register_spec(spec: InstrumentSpec) -> None:
     _REGISTRY[spec.symbol.upper()] = spec
 
 
-def get_spec(symbol: str) -> InstrumentSpec:
+def get_spec(symbol: str, *, strict: bool = False) -> InstrumentSpec:
     """Return the :class:`InstrumentSpec` for ``symbol``.
 
-    Unknown symbols default to a plain USD equity spec. This keeps the vertical
-    slice runnable for any ticker while the real reference-data service is still
-    to come; the default is intentionally conservative (multiplier 1, penny
-    tick, single-share lot).
+    Unknown symbols retain the historical equity fallback unless strict=True.
+    Risk gates must use strict lookup so missing reference data cannot authorize
+    an order. Other prototype/reporting callers may opt into the fallback.
     """
     key = symbol.upper()
     spec = _REGISTRY.get(key)
     if spec is not None:
         return spec
+    if strict:
+        raise KeyError(f"no instrument specification registered for {key}")
     return InstrumentSpec(symbol=key, asset_class=AssetClass.EQUITY)
 
 

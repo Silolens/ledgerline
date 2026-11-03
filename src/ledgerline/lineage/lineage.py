@@ -30,6 +30,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
 from typing import Any, Mapping
+from types import MappingProxyType
 
 __all__ = ["LineageRecord", "LineageLog", "GENESIS_PREV_ID", "canonical_json"]
 
@@ -51,6 +52,15 @@ def _canonicalize(value: Any) -> Any:
         return {str(k): _canonicalize(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
         return [_canonicalize(v) for v in value]
+    return value
+
+
+def _freeze(value: Any) -> Any:
+    """Recursively freeze canonical JSON data before it enters the hash chain."""
+    if isinstance(value, Mapping):
+        return MappingProxyType({k: _freeze(v) for k, v in value.items()})
+    if isinstance(value, list):
+        return tuple(_freeze(v) for v in value)
     return value
 
 
@@ -138,7 +148,7 @@ class LineageLog:
         prev_id = self.head_id
         # Freeze the payload as a canonical, immutable structure so a caller
         # can't mutate the dict after it has been hashed into the chain.
-        frozen_payload = json.loads(canonical_json(payload))
+        frozen_payload = _freeze(json.loads(canonical_json(payload)))
         record_id = LineageRecord.compute_id(
             seq, timestamp, kind, frozen_payload, prev_id
         )
