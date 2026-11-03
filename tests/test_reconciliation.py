@@ -4,7 +4,8 @@ from decimal import Decimal
 
 import pytest
 
-from ledgerline.book.book import Book
+from ledgerline.book.book import Book, Fill
+from ledgerline.core.instruments import AssetClass, InstrumentSpec, register_spec
 from ledgerline.core.types import OrderIntent, Side
 from ledgerline.execution.paper_broker import PaperBroker
 from ledgerline.execution.choke_point import ChokePoint
