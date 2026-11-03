@@ -9,10 +9,11 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Mapping
+from typing import Any, Iterator, Mapping
 
 from ledgerline.lineage.lineage import canonical_json
 
@@ -77,8 +78,17 @@ class SQLiteLedgerStore:
         conn.execute("PRAGMA synchronous = FULL")
         return conn
 
+    @contextmanager
+    def _connection(self) -> Iterator[sqlite3.Connection]:
+        conn = self._connect()
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
+
     def _initialize(self) -> None:
-        with self._connect() as conn:
+        with self._connection() as conn:
             if self.path != ":memory:":
                 conn.execute("PRAGMA journal_mode = WAL")
             conn.executescript(
@@ -121,7 +131,6 @@ class SQLiteLedgerStore:
             raise TypeError("payload must be a mapping")
 
         payload_json = canonical_json(payload)
-        # Ensure the root is a JSON object and reject unsupported values now.
         if not isinstance(json.loads(payload_json), dict):
             raise TypeError("payload must serialize to a JSON object")
 
@@ -165,21 +174,21 @@ class SQLiteLedgerStore:
             conn.close()
 
     def get_run(self, run_id: str) -> LedgerRecord | None:
-        with self._connect() as conn:
+        with self._connection() as conn:
             row = conn.execute(
                 "SELECT * FROM ledger_runs WHERE run_id = ?", (run_id,)
             ).fetchone()
             return None if row is None else self._to_record(row)
 
     def records(self) -> tuple[LedgerRecord, ...]:
-        with self._connect() as conn:
+        with self._connection() as conn:
             rows = conn.execute("SELECT * FROM ledger_runs ORDER BY seq").fetchall()
             return tuple(self._to_record(row) for row in rows)
 
     def verify(self) -> bool:
         """Verify sequence continuity, predecessor links and every stored hash."""
         expected_prev = self.GENESIS_HASH
-        with self._connect() as conn:
+        with self._connection() as conn:
             rows = conn.execute("SELECT * FROM ledger_runs ORDER BY seq").fetchall()
         for expected_seq, row in enumerate(rows):
             if row["seq"] != expected_seq or row["prev_hash"] != expected_prev:
