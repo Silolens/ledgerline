@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Protocol
 
-from ledgerline.storage.sqlite_store import LedgerRecord
+from ledgerline.storage.models import LedgerRecord
 
 
 class RunStore(Protocol):
