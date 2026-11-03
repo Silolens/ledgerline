@@ -96,7 +96,7 @@ class GateReport:
 
     @property
     def approved(self) -> bool:
-        return all(d.passed for d in self.decisions)
+        return bool(self.decisions) and all(d.passed for d in self.decisions)
 
     @property
     def rejections(self) -> tuple[GateDecision, ...]:
@@ -214,7 +214,17 @@ class BuyingPowerGate:
         return closing, (excess if excess > 0 else Decimal("0"))
 
     def evaluate(self, intent: OrderIntent, book: Book) -> GateDecision:
-        spec = get_spec(intent.symbol)
+        spec = get_spec(intent.symbol, strict=True)
+        if intent.limit_price % spec.tick_size != 0:
+            raise ValueError(
+                f"limit_price {intent.limit_price} is not a multiple of "
+                f"tick_size {spec.tick_size} for {spec.symbol}"
+            )
+        if intent.quantity % spec.lot_size != 0:
+            raise ValueError(
+                f"quantity {intent.quantity} is not a multiple of "
+                f"lot_size {spec.lot_size} for {spec.symbol}"
+            )
         mult = spec.contract_multiplier
         order_signed_qty = intent.quantity * intent.side.sign
 
@@ -283,6 +293,8 @@ class GateChain:
 
     def __init__(self, gates: Iterable[Gate]) -> None:
         self._gates: tuple[Gate, ...] = tuple(gates)
+        if not self._gates:
+            raise ValueError("GateChain requires at least one risk gate")
 
     @property
     def gates(self) -> tuple[Gate, ...]:

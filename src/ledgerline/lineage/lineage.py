@@ -54,6 +54,15 @@ def _canonicalize(value: Any) -> Any:
     return value
 
 
+def _freeze(value: Any) -> Any:
+    """Recursively freeze canonical JSON data before it enters the hash chain."""
+    if isinstance(value, Mapping):
+        return MappingProxyType({k: _freeze(v) for k, v in value.items()})
+    if isinstance(value, list):
+        return tuple(_freeze(v) for v in value)
+    return value
+
+
 def canonical_json(payload: Mapping[str, Any]) -> str:
     """Serialize a payload to a canonical string: sorted keys, no whitespace.
 
@@ -138,7 +147,7 @@ class LineageLog:
         prev_id = self.head_id
         # Freeze the payload as a canonical, immutable structure so a caller
         # can't mutate the dict after it has been hashed into the chain.
-        frozen_payload = json.loads(canonical_json(payload))
+        frozen_payload = _freeze(json.loads(canonical_json(payload)))
         record_id = LineageRecord.compute_id(
             seq, timestamp, kind, frozen_payload, prev_id
         )

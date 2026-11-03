@@ -229,10 +229,46 @@ def test_chain_fails_closed_when_a_gate_raises():
     assert "RuntimeError" in boom.reason
 
 
-def test_empty_chain_approves_vacuously():
-    report = GateChain([]).evaluate(intent(), Book("100000"))
-    assert report.approved is True
-    assert report.decisions == ()
+def test_empty_chain_is_rejected_at_configuration_time():
+    with pytest.raises(ValueError, match="at least one risk gate"):
+        GateChain([])
+
+
+def test_empty_gate_report_is_not_approved():
+    assert GateReport(()).approved is False
+
+
+def test_unknown_instrument_is_rejected_by_gate_chain():
+    report = GateChain([BuyingPowerGate()]).evaluate(
+        intent("UNKNOWN", Side.BUY, "1", "10"), Book("100000")
+    )
+    assert report.approved is False
+    assert "KeyError" in report.rejections[0].reason
+
+
+def test_order_price_must_match_instrument_tick():
+    register_spec(InstrumentSpec("TICK", AssetClass.EQUITY, tick_size=Decimal("0.05")))
+    report = GateChain([BuyingPowerGate()]).evaluate(
+        intent("TICK", Side.BUY, "1", "10.03"), Book("100000")
+    )
+    assert report.approved is False
+    assert "tick_size" in report.rejections[0].reason
+
+
+def test_order_quantity_must_match_instrument_lot():
+    register_spec(InstrumentSpec("LOT", AssetClass.EQUITY, lot_size=Decimal("5")))
+    report = GateChain([BuyingPowerGate()]).evaluate(
+        intent("LOT", Side.BUY, "3", "10"), Book("100000")
+    )
+    assert report.approved is False
+    assert "lot_size" in report.rejections[0].reason
+
+
+def test_instrument_increments_and_multiplier_must_be_positive():
+    with pytest.raises(ValueError, match="tick_size must be positive"):
+        InstrumentSpec("BADTICK", AssetClass.EQUITY, tick_size=Decimal("0"))
+    with pytest.raises(ValueError, match="lot_size must be positive"):
+        InstrumentSpec("BADLOT", AssetClass.EQUITY, lot_size=Decimal("-1"))
 
 
 # --- Protocol conformance ---------------------------------------------------

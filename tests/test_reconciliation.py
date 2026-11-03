@@ -152,3 +152,14 @@ def test_clean_with_reference_price_fill():
     report = reconcile(book, broker.fills, starting_cash=START)
     assert report.clean is True
     assert report.expected_cash == START - Decimal("1480")
+
+def test_reconciliation_uses_contract_multiplier_for_cash():
+    register_spec(
+        InstrumentSpec("ESR", AssetClass.FUTURE, contract_multiplier=Decimal("50"))
+    )
+    book = Book(Decimal("100000"))
+    fill = Fill("ESR", Side.BUY, Decimal("2"), Decimal("5000"))
+    book.apply(fill)
+    report = reconcile(book, [fill], starting_cash=Decimal("100000"))
+    assert report.clean is True
+    assert report.expected_cash == Decimal("100000") - Decimal("500000")
