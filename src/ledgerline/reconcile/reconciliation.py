@@ -22,6 +22,7 @@ from decimal import Decimal
 from typing import Sequence
 
 from ledgerline.book.book import Book, Fill
+from ledgerline.core.instruments import get_spec
 
 __all__ = ["PositionDrift", "ReconciliationReport", "reconcile"]
 
