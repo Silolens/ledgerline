@@ -31,9 +31,17 @@ class handler(BaseHTTPRequestHandler):
                     row = cursor.fetchone()
                     if row is None or row[0] != 1:
                         raise RuntimeError("database_probe_failed")
-        except Exception:
-            # Do not expose hostnames, SQL, credentials, or provider error details.
-            self._respond(503, {"status": "unavailable", "reason": "database_connection_failed"})
+        except Exception as exc:
+            # Expose only the exception class for safe diagnosis. Never return
+            # provider messages, hostnames, SQL, connection strings, or secrets.
+            self._respond(
+                503,
+                {
+                    "status": "unavailable",
+                    "reason": "database_connection_failed",
+                    "error_type": type(exc).__name__,
+                },
+            )
             return
 
         self._respond(200, {"status": "ok", "database": "reachable", "writes_performed": False})
