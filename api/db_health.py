@@ -8,10 +8,13 @@ import json
 import os
 from http.server import BaseHTTPRequestHandler
 
-
 class handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
-        database_url = os.environ.get("POSTGRES_URL") or os.environ.get("DATABASE_URL")
+        database_url = (
+            os.environ.get("POSTGRES_URL_NON_POOLING")
+            or os.environ.get("POSTGRES_URL")
+            or os.environ.get("DATABASE_URL")
+        )
         if not database_url:
             self._respond(503, {"status": "unavailable", "reason": "database_not_configured"})
             return
