@@ -31,9 +31,10 @@ assert store.verify()
 
 ## Getting started
 
-Requires **Python 3.12+**. No third-party runtime dependencies (stdlib only); `pytest` is the sole dev dependency.
+Requires **Python 3.12+**. The PostgreSQL adapter uses Psycopg 3, declared as a runtime dependency; `pytest` is the development dependency.
 
 ```bash
+python -m pip install -e ".[dev]"
 python -m pytest
 PYTHONPATH=src python -m ledgerline.demo
 ```

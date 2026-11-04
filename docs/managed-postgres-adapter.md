@@ -2,7 +2,7 @@
 
 ## Status
 
-`PostgresLedgerStore` implements the same `RunStore` contract as SQLite. It is provider-neutral and accepts a connection factory. Install the optional `postgres` extra for psycopg 3. No provider, database, credential, Vercel environment variable, or production resource has been provisioned.
+`PostgresLedgerStore` implements the same `RunStore` contract as SQLite. It is provider-neutral and accepts a connection factory. Psycopg 3 is declared as a required runtime dependency in `pyproject.toml`, so Vercel's Python build installs the driver. No provider, database, credential, Vercel environment variable, or production resource has been provisioned.
 
 ## Schema and migration
 
@@ -22,6 +22,6 @@ The runtime role should have `SELECT`/`INSERT` on `ledger_runs` and only the req
 
 ## Validation and rollout
 
-Run `pytest` for local SQLite coverage. Set `LEDGERLINE_TEST_DATABASE_URL` to a disposable migrated PostgreSQL database and install `.[postgres,dev]` to run PostgreSQL integration tests, including concurrent appends. Before preview deployment, add tests for connection loss, transaction rollback, restore, multi-instance contention, and role permissions. Only after those pass should preview credentials be configured. Production provisioning and deployment require separate explicit approval.
+Run `pytest` for local SQLite coverage. Set `LEDGERLINE_TEST_DATABASE_URL` to a disposable migrated PostgreSQL database and install `.[dev]` to run PostgreSQL integration tests, including concurrent appends. Before preview deployment, add tests for connection loss, transaction rollback, restore, multi-instance contention, and role permissions. Only after those pass should preview credentials be configured. Production provisioning and deployment require separate explicit approval.
 
 The unauthenticated `/api/run` remains read-only. Do not wire writes into it until authentication, authorization, rate limits, run ownership and API audit controls are implemented.
